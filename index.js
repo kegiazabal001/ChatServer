@@ -124,9 +124,8 @@ app.get('/api/messages/:username/:friend', (req, res) => {
     })
 });
 
-app.post('api/newMessage', (req, res) => {
+app.post('/api/newMessage', (req, res) => {
     const { username, friend, message } = req.body;
-    console.log(username, friend, message)
     db.Chats.update({users: [username, friend]}, {$push: {messages: message}}, (err, docs) => {
             if (err) {
                 db.Chats.update({users: [friend, username]}, {$push: {messages: message}}, (err, docs) => {
