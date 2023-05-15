@@ -117,7 +117,7 @@ app.post('/api/register', (req, res) => {
             if (docs.length > 0) {
                 res.status(401).json({ message: 'Username already exists' });
             } else {
-                db.Users.insert({username: username, email: email, password: password, friends: ['kimi']}, (err, docs) => {
+                db.Users.insert({username: username, email: email, password: password, friends: []}, (err, docs) => {
                     if (err) {
                         console.log(err)
                         res.status(401).json({ message: 'Registration failed' });
@@ -131,7 +131,8 @@ app.post('/api/register', (req, res) => {
 });
 
 app.get('/api/messages/:username/:friend', (req, res) => {
-    db.Chats.find({users: [req.params.username, req.params.friend]}, (err, docs) => {
+
+    db.Chats.find({users: {$all: [req.params.username, req.params.friend]}}, (err, docs) => {
         if (err) {
             console.log(err)
             res.json({ message: 'Error' })
@@ -143,44 +144,24 @@ app.get('/api/messages/:username/:friend', (req, res) => {
             }
         } else {
             //res.json({ message: 'No chat' })
-            db.Chats.find({users: [req.params.friend, req.params.username]}, (err, docs) => {
+            db.Chats.insert({users: [req.params.username, req.params.friend], messages: []}, (err, docs) => {
                 if (err) {
                     console.log(err)
                     res.json({ message: 'Error' })
-                } else if (docs.length > 0) {
-                    if (docs[0].messages.length > 0) {
-                        res.json({ message: 'ok', messages: docs[0].messages})
-                    } else {
-                        res.json({ message: 'No messages' })
-                    }
                 } else {
-                    db.Chats.insert({users: [req.params.username, req.params.friend], messages: []}, (err, docs) => {
-                        if (err) {
-                            console.log(err)
-                            res.json({ message: 'Error' })
-                        } else {
-                            res.json({ message: 'No messages' })
-                        }
-                    })
+                    res.json({ message: 'No messages' })
                 }
             })
-
         }
     })
 });
 
 app.post('/api/newMessage', (req, res) => {
     const { username, friend, message } = req.body;
-    db.Chats.update({users: [username, friend]}, {$push: {messages: message}}, (err, docs) => {
+    db.Chats.update({users: {$all: [username, friend]}}, {$push: {messages: message}}, (err, docs) => {
             if (err) {
-                db.Chats.update({users: [friend, username]}, {$push: {messages: message}}, (err, docs) => {
-                    if (err) {
-                        console.log(err)
-                        res.json({ message: 'Error' })
-                    } else {
-                        res.json({ message: 'ok' })
-                    }
-                })
+                console.log(err)
+                res.json({ message: 'Error' })
             } else {
                 res.json({ message: 'ok' })
             }
