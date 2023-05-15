@@ -17,17 +17,17 @@ app.get('/', (req, res) => {
     */
 });
 
-app.get('/api/messages/', (req, res) => {
-    //send db data to client
-    /*
-    db.inventory.find((err, docs) => {
+app.get('/api/users', (req, res) => {
+    db.Users.find({}, (err, docs) => {
         if (err) {
             console.log(err)
+            res.json({ message: 'Error' })
+        } else if (docs.length > 0) {
+            res.json({ message: 'ok', users: docs })
         } else {
-            res.json(docs)
+            res.json({ message: 'No users' })
         }
     })
-    */
 });
 
 app.get('/api/friends/:username', (req, res) => {
@@ -41,6 +41,51 @@ app.get('/api/friends/:username', (req, res) => {
             }
         } else {
             res.json({ message: 'No friends' })
+        }
+    })
+});
+
+app.post('/api/addFriend/', (req, res) => {
+    const { username, friend } = req.body;
+    db.Users.find({username: username}, (err, docs) => {
+        if (err) {
+            console.log(err)
+            res.status(401).json({ message: 'Error1' });
+        } else {
+            if (docs.length > 0) {
+                if (docs[0].friends.includes(friend)) {
+                    res.status(401).json({ message: 'Friend already exists' });
+                } else {
+                    db.Users.update({username: username}, {$push: {friends: friend}}, (err, docs) => {
+                        if (err) {
+                            console.log(err)
+                            res.status(401).json({ message: 'Add friend failed' });
+                        } else {
+                            db.Users.find({username: friend}, (err, docs) => {
+                                if (err) {
+                                    console.log(err)
+                                    res.status(401).json({ message: 'Error2' });
+                                } else {
+                                    if (docs.length > 0) {
+                                        db.Users.update({username: friend}, {$push: {friends: username}}, (err, docs) => {
+                                            if (err) {
+                                                console.log(err)
+                                                res.status(401).json({ message: 'Add friend failed' });
+                                            } else {
+                                                res.status(200).json({ message: 'ok' });
+                                            }
+                                        })
+                                    } else {
+                                        res.status(401).json({ message: 'Error3' });
+                                    }
+                                }
+                            })
+                        }
+                    })
+                }
+            } else {
+                res.status(401).json({ message: 'Error4' });
+            }
         }
     })
 });
@@ -141,7 +186,7 @@ app.post('/api/newMessage', (req, res) => {
             }
         })
 });
-                    
+
 
 
 app.listen(port, () => {
